@@ -1,0 +1,20 @@
+rules:
+  - pattern: "delete"
+    effect: "block"
+    reason: "Delete operations require human approval"
+
+  - pattern: "drop table"
+    effect: "block"
+    reason: "Database destruction not permitted"
+
+  - pattern: "send_email"
+    effect: "block"
+    reason: "Email sending requires human review"
+
+  - pattern: "transfer.*funds"
+    effect: "block"
+    reason: "Financial transactions not permitted without approval"
+
+  - pattern: "rm -rf"
+    effect: "block"
+    reason: "Destructive shell commands are blocked"
