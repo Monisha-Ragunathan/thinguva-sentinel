@@ -3,6 +3,8 @@ from sentinel.audit import AuditLogger
 from sentinel.policy import PolicyEngine
 from sentinel.wrapper import SentinelWrapper
 from typing import Optional
+from fastapi.responses import FileResponse
+import os
 
 router = APIRouter()
 audit = AuditLogger()
@@ -54,3 +56,18 @@ def get_stats():
         "loops_detected": loops,
         "block_rate": f"{(blocked/total*100):.1f}%" if total > 0 else "0%"
     }
+
+
+@router.get("/report/generate")
+def generate_report():
+    from sentinel.compliance_report import ComplianceReportGenerator
+    generator = ComplianceReportGenerator(
+        db_path="sentinel_audit.db",
+        policy_file="policies/sample.yaml"
+    )
+    path = generator.generate()
+    return FileResponse(
+        path,
+        media_type="application/pdf",
+        filename="thinguva_sentinel_report.pdf"
+    )
