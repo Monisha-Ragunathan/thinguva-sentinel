@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  sentinel:
+    build: .
+    container_name: thinguva-sentinel
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./policies:/app/policies
+      - sentinel_data:/app/data
+    environment:
+      - SENTINEL_ENV=production
+    restart: unless-stopped
+
+volumes:
+  sentinel_data:
