@@ -71,3 +71,17 @@ def generate_report():
         media_type="application/pdf",
         filename="thinguva_sentinel_report.pdf"
     )
+
+@router.get("/alerts")
+def get_alerts():
+    from sentinel.alerts import AlertSystem
+    alert_system = AlertSystem()
+    return {
+        "message": "Alert system active",
+        "channels": {
+            "console": True,
+            "slack": False,
+            "webhook": False,
+            "email": False
+        }
+    }

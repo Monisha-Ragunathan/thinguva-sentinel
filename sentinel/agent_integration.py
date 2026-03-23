@@ -6,19 +6,28 @@ from sentinel.anomaly import AnomalyDetector
 from sentinel.human_approval import HumanApprovalSystem
 import functools
 import time
+from sentinel.alerts import AlertSystem
 
 class AgentIntegration:
     def __init__(
         self,
         policy_file: str = None,
         require_approval: bool = False,
-        anomaly_detection: bool = True
+        anomaly_detection: bool = True,
+        slack_webhook: str = None,
+        webhook_url: str = None,
+        email_config: dict = None
     ):
         self.audit = AuditLogger()
         self.loop_detector = LoopDetector()
         self.policy_engine = PolicyEngine(policy_file)
         self.anomaly_detector = AnomalyDetector()
         self.approval_system = HumanApprovalSystem()
+        self.alert_system = AlertSystem(
+            slack_webhook=slack_webhook,
+            webhook_url=webhook_url,
+            email_config=email_config
+        )
         self.require_approval = require_approval
         self.anomaly_detection = anomaly_detection
         self.session_id = str(int(time.time()))
