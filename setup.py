@@ -17,7 +17,5 @@ setup(
     python_requires=">=3.11",
     author="Thinguva",
     description="Agent Governance and Reliability Platform",
-    long_description=open("README.md").read(),
-    long_description_content_type="text/markdown",
     url="https://github.com/Monisha-Ragunathan/thinguva-sentinel",
 )
