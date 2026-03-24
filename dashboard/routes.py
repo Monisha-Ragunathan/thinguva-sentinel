@@ -85,3 +85,11 @@ def get_alerts():
             "email": False
         }
     }
+
+@router.post("/assess")
+def assess_action(payload: dict):
+    from sentinel.agent_integration import AgentIntegration
+    sentinel = AgentIntegration(policy_file="policies/sample.yaml")
+    action = payload.get("action", "")
+    result = sentinel.assess(action)
+    return result
