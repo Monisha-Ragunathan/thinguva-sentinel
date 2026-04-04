@@ -212,3 +212,9 @@ def get_all_modes():
     from sentinel.policy_modes import PolicyModeManager
     manager = PolicyModeManager()
     return manager.get_all_modes()
+
+@router.get("/timeline")
+def get_timeline():
+    from sentinel.risk_timeline import RiskTimeline
+    timeline = RiskTimeline()
+    return {"timeline": timeline.get_recent_timeline(limit=20)}
