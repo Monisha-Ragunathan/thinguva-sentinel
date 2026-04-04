@@ -36,114 +36,130 @@ class RiskEngine:
     def __init__(self):
         # Risk categories with scores and semantic variants
         self.risk_categories = [
-            {
-                "name": "data_destruction",
-                "base_score": 95,
-                "patterns": [
-                    "delete", "drop", "truncate", "destroy",
-                    "remove", "erase", "wipe", "purge"
-                ],
-                "semantic_variants": [
-                    "archive all", "clear all", "reset all",
-                    "clean up all", "flush all", "eliminate"
-                ],
-                "description": "Data destruction or irreversible deletion"
-            },
-            {
-                "name": "financial_risk",
-                "base_score": 90,
-                "patterns": [
-                    "transfer funds", "send money", "payment",
-                    "withdraw", "transaction", "wire transfer"
-                ],
-                "semantic_variants": [
-                    "move balance", "shift funds", "reallocate budget",
-                    "process payout", "execute payment"
-                ],
-                "description": "Financial transaction or fund movement"
-            },
-            {
-                "name": "mass_communication",
-                "base_score": 80,
-                "patterns": [
-                    "send_email", "email all", "notify all",
-                    "broadcast", "mass message", "bulk send"
-                ],
-                "semantic_variants": [
-                    "reach out to everyone", "contact all users",
-                    "send to list", "distribute to all"
-                ],
-                "description": "Mass communication to multiple recipients"
-            },
-            {
-                "name": "system_access",
-                "base_score": 85,
-                "patterns": [
-                    "rm -rf", "sudo", "chmod", "exec\(",
-                    "shell", "system\(", "subprocess"
-                ],
-                "semantic_variants": [
-                    "run command", "execute script",
-                    "system operation", "admin access"
-                ],
-                "description": "Dangerous system level command execution"
-            },
-            {
-                "name": "data_exfiltration",
-                "base_score": 88,
-                "patterns": [
-                    "export all", "download all", "dump database",
-                    "extract all", "backup to external"
-                ],
-                "semantic_variants": [
-                    "copy everything", "send all records",
-                    "share full dataset", "upload everything"
-                ],
-                "description": "Potential data exfiltration attempt"
-            },
-            {
-                "name": "prompt_injection",
-                "base_score": 92,
-                "patterns": [
-                    "ignore previous", "disregard instructions",
-                    "forget your rules", "new instruction",
-                    "override policy", "bypass"
-                ],
-                "semantic_variants": [
-                    "actually your real task",
-                    "your true purpose is",
-                    "admin override"
-                ],
-                "description": "Prompt injection or policy bypass attempt"
-            },
-            {
-                "name": "indirect_chaining",
-                "base_score": 75,
-                "patterns": [
-                    "then delete", "after export",
-                    "first copy then remove",
-                    "chain", "sequence of"
-                ],
-                "semantic_variants": [
-                    "do x and then y",
-                    "combine operations",
-                    "multi step action"
-                ],
-                "description": "Indirect tool chaining attack"
-            },
-            {
-                "name": "low_risk",
-                "base_score": 10,
-                "patterns": [
-                    "summarize", "report", "analyze",
-                    "search", "find", "list", "show",
-                    "read", "get", "fetch", "query select"
-                ],
-                "semantic_variants": [],
-                "description": "Safe read or analysis operation"
-            }
-        ]
-
+    {
+        "name": "data_destruction",
+        "base_score": 95,
+        "patterns": [
+            "delete", "drop", "truncate", "destroy",
+            "remove all", "erase", "wipe", "purge",
+            "clean up", "clear all", "flush", "reset all"
+        ],
+        "semantic_variants": [
+            "archive all", "eliminate all",
+            "dispose of all", "discard all"
+        ],
+        "description": "Data destruction or irreversible deletion"
+    },
+    {
+        "name": "financial_risk",
+        "base_score": 95,
+        "patterns": [
+            "transfer", "send money", "payment",
+            "withdraw", "transaction", "wire transfer",
+            "fund", "account [0-9]", "immediately",
+            "rupee", "inr", "\u20b9", "usd", "\$[0-9]",
+            "[0-9],000", "lakh", "crore"
+        ],
+        "semantic_variants": [
+            "move balance", "shift funds", "reallocate budget",
+            "process payout", "execute payment", "remit"
+        ],
+        "description": "Financial transaction or fund movement"
+    },
+    {
+        "name": "data_exfiltration",
+        "base_score": 92,
+        "patterns": [
+            "export", "extract all", "dump",
+            "backup to external", "send to external",
+            "upload to", "copy to", "collect all",
+            "entire database", "entire.*database",
+            "all.*email", "email.*database",
+            "send.*database", "send.*gmail",
+            "send.*yahoo", "send.*hotmail",
+            "external server", "outside"
+        ],
+        "semantic_variants": [
+            "copy everything", "share full dataset",
+            "forward all records", "transmit all data"
+        ],
+        "description": "Potential data exfiltration attempt"
+    },
+    {
+        "name": "mass_communication",
+        "base_score": 80,
+        "patterns": [
+            "send_email", "email all", "notify all",
+            "broadcast", "mass message", "bulk send",
+            "all users", "all customers", "mailing list"
+        ],
+        "semantic_variants": [
+            "reach out to everyone", "contact all users",
+            "send to list", "distribute to all"
+        ],
+        "description": "Mass communication to multiple recipients"
+    },
+    {
+        "name": "system_access",
+        "base_score": 85,
+        "patterns": [
+            "rm -rf", "sudo", "chmod",
+            "exec\(", "shell", "system\(",
+            "subprocess", "admin access",
+            "grant.*admin", "escalate.*privilege",
+            "root access", "superuser"
+        ],
+        "semantic_variants": [
+            "run command", "execute script",
+            "system operation", "full access",
+            "manage all users"
+        ],
+        "description": "Dangerous system level command execution"
+    },
+    {
+        "name": "prompt_injection",
+        "base_score": 92,
+        "patterns": [
+            "ignore.*rules", "ignore.*previous",
+            "disregard instructions",
+            "forget your rules", "new instruction",
+            "override policy", "bypass",
+            "ignore all", "disregard all"
+        ],
+        "semantic_variants": [
+            "actually your real task",
+            "your true purpose is",
+            "admin override"
+        ],
+        "description": "Prompt injection or policy bypass attempt"
+    },
+    {
+        "name": "indirect_chaining",
+        "base_score": 75,
+        "patterns": [
+            "then delete", "after export",
+            "first copy then remove",
+            "and then send", "followed by delete"
+        ],
+        "semantic_variants": [
+            "combine operations",
+            "multi step action"
+        ],
+        "description": "Indirect tool chaining attack"
+    },
+    {
+        "name": "low_risk",
+        "base_score": 10,
+        "patterns": [
+            "summarize", "report", "analyze",
+            "search", "find", "list", "show",
+            "read", "get", "fetch", "query select",
+            "optimize storage", "performance"
+        ],
+        "semantic_variants": [],
+        "description": "Safe read or analysis operation"
+    }
+]
     def _match_patterns(self, action: str, patterns: list) -> list:
         action_lower = action.lower()
         matched = []
@@ -155,29 +171,35 @@ class RiskEngine:
     def _calculate_score(self, matches: list) -> int:
         if not matches:
             return 15
-        scores = [m["base_score"] for m in matches]
-        # Highest risk wins, with bonus for multiple matches
+
+        # Filter out low_risk if other categories matched
+        high_risk = [m for m in matches if m["name"] != "low_risk"]
+        if not high_risk:
+            scores = [m["base_score"] for m in matches]
+            return min(max(scores), 100)
+
+        scores = [m["base_score"] for m in high_risk]
         base = max(scores)
-        bonus = min(len(scores) * 3, 10)
+        bonus = min((len(high_risk) - 1) * 3, 10)
         return min(base + bonus, 100)
 
     def _get_risk_level(self, score: int) -> str:
-        if score >= 85:
+        if score >= 80:
             return "CRITICAL"
-        elif score >= 70:
+        elif score >= 60:
             return "HIGH"
-        elif score >= 40:
+        elif score >= 30:
             return "MEDIUM"
         else:
             return "LOW"
 
     def _get_decision(self, score: int, risk_level: str) -> tuple:
-        if risk_level == "CRITICAL":
+        if score >= 80:
             return "BLOCK", False
-        elif risk_level == "HIGH":
-            return "PAUSE", True
-        elif risk_level == "MEDIUM":
-            return "PAUSE", True
+        elif score >= 60:
+            return "APPROVAL", True
+        elif score >= 30:
+            return "REVIEW", True
         else:
             return "ALLOW", False
 

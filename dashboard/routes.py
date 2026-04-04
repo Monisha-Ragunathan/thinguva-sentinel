@@ -93,3 +93,18 @@ def assess_action(payload: dict):
     action = payload.get("action", "")
     result = sentinel.assess(action)
     return result
+
+
+@router.post("/simulate")
+def simulate_action(payload: dict):
+    from sentinel.simulation import SimulationEngine
+    sim = SimulationEngine(policy_file="policies/sample.yaml")
+    action = payload.get("action", "")
+    return sim.simulate(action)
+
+@router.post("/simulate/sequence")
+def simulate_sequence(payload: dict):
+    from sentinel.simulation import SimulationEngine
+    sim = SimulationEngine(policy_file="policies/sample.yaml")
+    actions = payload.get("actions", [])
+    return sim.simulate_sequence(actions)

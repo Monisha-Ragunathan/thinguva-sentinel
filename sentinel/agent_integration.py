@@ -8,6 +8,7 @@ from sentinel.alerts import AlertSystem
 from sentinel.risk_engine import RiskEngine
 from sentinel.semantic_matcher import SemanticMatcher
 from sentinel.identity import IdentityManager
+from sentinel.intent_engine import IntentEngine
 import functools
 import time
 
@@ -26,6 +27,7 @@ class AgentIntegration:
         self.policy_engine = PolicyEngine(policy_file)
         self.anomaly_detector = AnomalyDetector()
         self.approval_system = HumanApprovalSystem()
+        self.intent_engine = IntentEngine()
         self.alert_system = AlertSystem(
             slack_webhook=slack_webhook,
             webhook_url=webhook_url,
@@ -149,9 +151,70 @@ class AgentIntegration:
 
     def assess(self, action: str) -> dict:
         """Assess any action and return full risk report"""
+        # Base risk assessment
         assessment = self.risk_engine.assess(action)
+
+        # Semantic threat detection
         is_threat, threat_reasons = self.semantic_matcher.is_semantic_threat(action)
+
+        # Intent analysis
+        intent = self.intent_engine.analyze(action)
+
+        # Fuse scores — intent engine adds bonus on top of base
+        final_score = min(assessment.risk_score + intent.intent_risk_score, 100)
+
+        # Build full explanation FIRST before using it
+        full_explanation = assessment.explanation
+        if intent.intent_explanation != "No additional intent signals":
+            full_explanation += f" | Intent: {intent.intent_explanation}"
+
+        # Upgrade if semantic threats are critical
+        critical_threats = [t for t in threat_reasons if "CRITICAL" in t]
+        if critical_threats and final_score < 80:
+            final_score = 88
+
+        # Upgrade if semantic threats are HIGH and sensitive coupling exists
+        high_threats = [t for t in threat_reasons if "HIGH" in t]
+        if high_threats and intent.sensitive_data_coupling and final_score < 60:
+            final_score = 63
+            full_explanation += " | Semantic HIGH threat + sensitive coupling — upgraded to HIGH"
+
+        # Recalculate level and decision
+        if final_score >= 80:
+            final_level = "CRITICAL"
+            final_decision = "BLOCK"
+        elif final_score >= 60:
+            final_level = "HIGH"
+            final_decision = "APPROVAL"
+        elif final_score >= 30:
+            final_level = "MEDIUM"
+            final_decision = "REVIEW"
+        else:
+            final_level = "LOW"
+            final_decision = "ALLOW"
+
+        # Build full explanation
+        full_explanation = assessment.explanation
+        if intent.intent_explanation != "No additional intent signals":
+            full_explanation += f" | Intent: {intent.intent_explanation}"
+
         return {
-            **assessment.to_dict(),
-            "semantic_threats": threat_reasons
+            "action": action,
+            "risk_score": final_score,
+            "risk_level": final_level,
+            "decision": final_decision,
+            "matched_rules": assessment.matched_rules,
+            "match_reasons": assessment.match_reasons,
+            "explanation": full_explanation,
+            "semantic_threats": threat_reasons,
+            "intent_analysis": {
+                "normalized": intent.normalized_action,
+                "goal": intent.goal,
+                "action_verbs": intent.action_verbs,
+                "targets": intent.targets,
+                "stealth_signals": intent.stealth_signals,
+                "sensitive_coupling": intent.sensitive_data_coupling,
+                "intent_score_boost": intent.intent_risk_score
+            },
+            "requires_approval": final_score >= 70
         }
