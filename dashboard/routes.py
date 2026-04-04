@@ -194,3 +194,21 @@ def reject_action(payload: dict):
         reviewed_by=payload.get("reviewed_by", "admin"),
         reason=payload.get("reason", "")
     )
+
+@router.get("/mode")
+def get_mode():
+    from sentinel.policy_modes import PolicyModeManager
+    manager = PolicyModeManager()
+    return manager.get_mode()
+
+@router.post("/mode/set")
+def set_mode(payload: dict):
+    from sentinel.policy_modes import PolicyModeManager
+    manager = PolicyModeManager()
+    return manager.set_mode(payload.get("mode", "balanced"))
+
+@router.get("/mode/all")
+def get_all_modes():
+    from sentinel.policy_modes import PolicyModeManager
+    manager = PolicyModeManager()
+    return manager.get_all_modes()

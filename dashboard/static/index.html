@@ -94,6 +94,28 @@
     </div>
   </div>
 
+  <!-- Policy Mode Selector -->
+  <div style="display:flex;gap:12px;margin-bottom:24px">
+    <div id="mode-strict" onclick="setMode('strict')"
+      style="flex:1;background:#1a1d2e;border:2px solid #2d3748;border-radius:12px;padding:16px;cursor:pointer;transition:all 0.2s">
+      <div style="font-size:18px;margin-bottom:6px">🟢</div>
+      <div style="font-size:13px;font-weight:600;color:#e2e8f0">Strict</div>
+      <div style="font-size:11px;color:#718096;margin-top:4px">Block aggressively</div>
+    </div>
+    <div id="mode-balanced" onclick="setMode('balanced')"
+      style="flex:1;background:#1a1d2e;border:2px solid #6c63ff;border-radius:12px;padding:16px;cursor:pointer;transition:all 0.2s">
+      <div style="font-size:18px;margin-bottom:6px">🟡</div>
+      <div style="font-size:13px;font-weight:600;color:#e2e8f0">Balanced</div>
+      <div style="font-size:11px;color:#718096;margin-top:4px">Block + review</div>
+    </div>
+    <div id="mode-learning" onclick="setMode('learning')"
+      style="flex:1;background:#1a1d2e;border:2px solid #2d3748;border-radius:12px;padding:16px;cursor:pointer;transition:all 0.2s">
+      <div style="font-size:18px;margin-bottom:6px">🔵</div>
+      <div style="font-size:13px;font-weight:600;color:#e2e8f0">Learning</div>
+      <div style="font-size:11px;color:#718096;margin-top:4px">Log only, no blocking</div>
+    </div>
+  </div>
+
   <!-- Charts -->
   <div class="charts">
     <div class="section">
@@ -633,6 +655,32 @@ async function rejectAction(requestId) {
 
 loadApprovals();
 setInterval(loadApprovals, 5000);
+
+async function loadMode() {
+  const res = await fetch('/api/mode');
+  const data = await res.json();
+  const current = data.current_mode;
+
+  ['strict', 'balanced', 'learning'].forEach(mode => {
+    const el = document.getElementById(`mode-${mode}`);
+    if (el) {
+      el.style.borderColor = mode === current ? '#6c63ff' : '#2d3748';
+      el.style.background = mode === current ? '#1e1a3a' : '#1a1d2e';
+    }
+  });
+}
+
+async function setMode(mode) {
+  await fetch('/api/mode/set', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({mode})
+  });
+  loadMode();
+}
+
+loadMode();
+
 </script>
 </body>
 </html>
