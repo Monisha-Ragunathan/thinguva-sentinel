@@ -176,6 +176,73 @@
     </table>
   </div>
 
+
+  <!-- Policy Builder -->
+  <div class="section">
+    <h2>Policy Builder</h2>
+    <p style="color:#718096;font-size:13px;margin-bottom:16px">Add custom governance rules — no code needed.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div>
+        <label style="font-size:12px;color:#718096;display:block;margin-bottom:4px">Rule Name</label>
+        <input id="rule-name" type="text" placeholder="e.g. block_data_export"
+          style="width:100%;background:#0f1117;border:1px solid #2d3748;border-radius:8px;padding:8px 12px;color:#e2e8f0;font-size:13px;outline:none"/>
+      </div>
+      <div>
+        <label style="font-size:12px;color:#718096;display:block;margin-bottom:4px">Pattern (regex)</label>
+        <input id="rule-pattern" type="text" placeholder="e.g. export.*external"
+          style="width:100%;background:#0f1117;border:1px solid #2d3748;border-radius:8px;padding:8px 12px;color:#e2e8f0;font-size:13px;outline:none"/>
+      </div>
+      <div>
+        <label style="font-size:12px;color:#718096;display:block;margin-bottom:4px">Effect</label>
+        <select id="rule-effect"
+          style="width:100%;background:#0f1117;border:1px solid #2d3748;border-radius:8px;padding:8px 12px;color:#e2e8f0;font-size:13px;outline:none">
+          <option value="block">Block</option>
+          <option value="review">Review</option>
+          <option value="allow">Allow</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px;color:#718096;display:block;margin-bottom:4px">Severity</label>
+        <select id="rule-severity"
+          style="width:100%;background:#0f1117;border:1px solid #2d3748;border-radius:8px;padding:8px 12px;color:#e2e8f0;font-size:13px;outline:none">
+          <option value="CRITICAL">Critical</option>
+          <option value="HIGH">High</option>
+          <option value="MEDIUM">Medium</option>
+          <option value="LOW">Low</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;color:#718096;display:block;margin-bottom:4px">Reason</label>
+      <input id="rule-reason" type="text" placeholder="e.g. Data exfiltration not permitted"
+        style="width:100%;background:#0f1117;border:1px solid #2d3748;border-radius:8px;padding:8px 12px;color:#e2e8f0;font-size:13px;outline:none"/>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <button class="btn" onclick="addRule()">Add Rule</button>
+      <button class="btn-outline" onclick="loadPolicies()">↻ Refresh Rules</button>
+    </div>
+
+    <div id="policy-result" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px"></div>
+
+    <table id="policy-table">
+      <thead>
+        <tr>
+          <th>Pattern</th>
+          <th>Effect</th>
+          <th>Severity</th>
+          <th>Reason</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="policy-tbody">
+        <tr><td colspan="5" class="empty">Loading rules...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
   <!-- Compliance Report -->
   <div class="section">
     <h2>Compliance Report</h2>
@@ -375,6 +442,79 @@ initCharts();
 loadStats();
 loadLogs();
 setInterval(() => { loadStats(); loadLogs(); }, 5000);
+
+async function loadPolicies() {
+  const res = await fetch('/api/policies/all');
+  const data = await res.json();
+  const tbody = document.getElementById('policy-tbody');
+  if (!data.rules || data.rules.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">No rules found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.rules.map(rule => `
+    <tr>
+      <td><code style="background:#0f1117;padding:2px 6px;border-radius:4px;font-size:12px">${rule.pattern}</code></td>
+      <td><span class="badge ${rule.effect === 'block' ? 'BLOCKED' : 'ALLOWED'}">${rule.effect.toUpperCase()}</span></td>
+      <td><span class="badge ${rule.severity === 'CRITICAL' ? 'BLOCKED' : rule.severity === 'HIGH' ? 'LOOP_DETECTED' : 'ALLOWED'}">${rule.severity || 'HIGH'}</span></td>
+      <td style="color:#718096">${rule.reason || '—'}</td>
+      <td><button onclick="deleteRule('${rule.pattern}')"
+        style="background:#3a1c1c;color:#fc8181;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px">
+        Delete
+      </button></td>
+    </tr>
+  `).join('');
+}
+
+async function addRule() {
+  const name = document.getElementById('rule-name').value;
+  const pattern = document.getElementById('rule-pattern').value;
+  const effect = document.getElementById('rule-effect').value;
+  const severity = document.getElementById('rule-severity').value;
+  const reason = document.getElementById('rule-reason').value;
+
+  if (!name || !pattern) {
+    showPolicyResult('Please fill in name and pattern', false);
+    return;
+  }
+
+  const res = await fetch('/api/policies/add', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({name, pattern, effect, severity, reason})
+  });
+  const data = await res.json();
+  showPolicyResult(data.message, data.success);
+
+  if (data.success) {
+    document.getElementById('rule-name').value = '';
+    document.getElementById('rule-pattern').value = '';
+    document.getElementById('rule-reason').value = '';
+    loadPolicies();
+  }
+}
+
+async function deleteRule(pattern) {
+  const res = await fetch('/api/policies/delete', {
+    method: 'DELETE',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({pattern})
+  });
+  const data = await res.json();
+  showPolicyResult(data.message, data.success);
+  loadPolicies();
+}
+
+function showPolicyResult(message, success) {
+  const el = document.getElementById('policy-result');
+  el.style.display = 'block';
+  el.style.background = success ? '#1c3a2a' : '#3a1c1c';
+  el.style.border = `1px solid ${success ? '#48bb78' : '#fc8181'}`;
+  el.style.color = success ? '#48bb78' : '#fc8181';
+  el.textContent = message;
+  setTimeout(() => el.style.display = 'none', 3000);
+}
+
+loadPolicies();
 </script>
 </body>
 </html>

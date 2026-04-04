@@ -108,3 +108,41 @@ def simulate_sequence(payload: dict):
     sim = SimulationEngine(policy_file="policies/sample.yaml")
     actions = payload.get("actions", [])
     return sim.simulate_sequence(actions)
+
+@router.get("/policies/all")
+def get_all_policies():
+    from sentinel.policy_builder import PolicyBuilder
+    builder = PolicyBuilder()
+    return {
+        "rules": builder.get_rules(),
+        "stats": builder.get_stats()
+    }
+
+@router.post("/policies/add")
+def add_policy(payload: dict):
+    from sentinel.policy_builder import PolicyBuilder
+    builder = PolicyBuilder()
+    return builder.add_rule(
+        name=payload.get("name", ""),
+        pattern=payload.get("pattern", ""),
+        effect=payload.get("effect", "block"),
+        reason=payload.get("reason", ""),
+        category=payload.get("category", "custom"),
+        severity=payload.get("severity", "HIGH"),
+        created_by=payload.get("created_by", "admin")
+    )
+
+@router.delete("/policies/delete")
+def delete_policy(payload: dict):
+    from sentinel.policy_builder import PolicyBuilder
+    builder = PolicyBuilder()
+    return builder.delete_rule(payload.get("pattern", ""))
+
+@router.post("/policies/test")
+def test_policy(payload: dict):
+    from sentinel.policy_builder import PolicyBuilder
+    builder = PolicyBuilder()
+    return builder.test_rule(
+        payload.get("pattern", ""),
+        payload.get("test_action", "")
+    )
