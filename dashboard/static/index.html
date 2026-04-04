@@ -177,6 +177,39 @@
   </div>
 
 
+<!-- Approval Queue -->
+  <div class="section">
+    <h2>Approval Queue
+      <span id="pending-count" style="background:#fc8181;color:#fff;font-size:11px;padding:2px 8px;border-radius:20px;margin-left:8px">0</span>
+    </h2>
+    <p style="color:#718096;font-size:13px;margin-bottom:16px">
+      High risk agent actions waiting for human review.
+    </p>
+
+    <!-- Test submission -->
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <input type="text" id="approval-action" placeholder="Submit action for approval e.g. export user database..."
+        style="flex:1;background:#0f1117;border:1px solid #2d3748;border-radius:8px;padding:10px 14px;color:#e2e8f0;font-size:13px;outline:none"/>
+      <button class="btn" onclick="submitForApproval()">Submit for Approval</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Time</th>
+          <th>Action</th>
+          <th>Risk</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="approval-tbody">
+        <tr><td colspan="6" class="empty">No pending approvals</td></tr>
+      </tbody>
+    </table>
+  </div>
+
   <!-- Policy Builder -->
   <div class="section">
     <h2>Policy Builder</h2>
@@ -515,6 +548,91 @@ function showPolicyResult(message, success) {
 }
 
 loadPolicies();
+
+async function loadApprovals() {
+  const res = await fetch('/api/approvals/all');
+  const data = await res.json();
+  const tbody = document.getElementById('approval-tbody');
+  const pending = data.approvals.filter(a => a.status === 'PENDING');
+
+  // Update badge
+  document.getElementById('pending-count').textContent = pending.length;
+  document.getElementById('pending-count').style.background =
+    pending.length > 0 ? '#fc8181' : '#48bb78';
+
+  if (!data.approvals || data.approvals.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">No approvals yet</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.approvals.map(a => `
+    <tr>
+      <td><code style="background:#0f1117;padding:2px 6px;border-radius:4px;font-size:11px">${a.request_id}</code></td>
+      <td style="font-size:12px;color:#718096">${a.timestamp.replace('T',' ').split('.')[0]}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">${a.action}</td>
+      <td><span class="badge ${a.risk_level === 'CRITICAL' ? 'BLOCKED' : 'LOOP_DETECTED'}">${a.risk_level}</span></td>
+      <td><span class="badge ${a.status === 'APPROVED' ? 'ALLOWED' : a.status === 'REJECTED' ? 'BLOCKED' : 'LOOP_DETECTED'}">${a.status}</span></td>
+      <td>
+        ${a.status === 'PENDING' ? `
+          <button onclick="approveAction('${a.request_id}')"
+            style="background:#1c3a2a;color:#48bb78;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;margin-right:4px">
+            ✓ Approve
+          </button>
+          <button onclick="rejectAction('${a.request_id}')"
+            style="background:#3a1c1c;color:#fc8181;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px">
+            ✗ Reject
+          </button>
+        ` : `<span style="color:#4a5568;font-size:12px">Reviewed by ${a.reviewed_by || 'admin'}</span>`}
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function submitForApproval() {
+  const action = document.getElementById('approval-action').value;
+  if (!action) return;
+
+  const assessment = await fetch('/api/assess', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({action})
+  }).then(r => r.json());
+
+  await fetch('/api/approvals/submit', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      action,
+      risk_score: assessment.risk_score,
+      risk_level: assessment.risk_level,
+      explanation: assessment.explanation
+    })
+  });
+
+  document.getElementById('approval-action').value = '';
+  loadApprovals();
+}
+
+async function approveAction(requestId) {
+  await fetch('/api/approvals/approve', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({request_id: requestId, reviewed_by: 'admin'})
+  });
+  loadApprovals();
+}
+
+async function rejectAction(requestId) {
+  await fetch('/api/approvals/reject', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({request_id: requestId, reviewed_by: 'admin'})
+  });
+  loadApprovals();
+}
+
+loadApprovals();
+setInterval(loadApprovals, 5000);
 </script>
 </body>
 </html>

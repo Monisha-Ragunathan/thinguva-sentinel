@@ -146,3 +146,51 @@ def test_policy(payload: dict):
         payload.get("pattern", ""),
         payload.get("test_action", "")
     )
+
+@router.get("/approvals/pending")
+def get_pending_approvals():
+    from sentinel.approval_queue import ApprovalQueue
+    queue = ApprovalQueue()
+    return {
+        "pending": queue.get_pending(),
+        "stats": queue.get_stats()
+    }
+
+@router.get("/approvals/all")
+def get_all_approvals():
+    from sentinel.approval_queue import ApprovalQueue
+    queue = ApprovalQueue()
+    return {"approvals": queue.get_all()}
+
+@router.post("/approvals/submit")
+def submit_approval(payload: dict):
+    from sentinel.approval_queue import ApprovalQueue
+    queue = ApprovalQueue()
+    return queue.submit(
+        action=payload.get("action", ""),
+        tool=payload.get("tool", ""),
+        agent_id=payload.get("agent_id", ""),
+        risk_score=payload.get("risk_score", 0),
+        risk_level=payload.get("risk_level", "HIGH"),
+        explanation=payload.get("explanation", "")
+    )
+
+@router.post("/approvals/approve")
+def approve_action(payload: dict):
+    from sentinel.approval_queue import ApprovalQueue
+    queue = ApprovalQueue()
+    return queue.approve(
+        request_id=payload.get("request_id", ""),
+        reviewed_by=payload.get("reviewed_by", "admin"),
+        reason=payload.get("reason", "")
+    )
+
+@router.post("/approvals/reject")
+def reject_action(payload: dict):
+    from sentinel.approval_queue import ApprovalQueue
+    queue = ApprovalQueue()
+    return queue.reject(
+        request_id=payload.get("request_id", ""),
+        reviewed_by=payload.get("reviewed_by", "admin"),
+        reason=payload.get("reason", "")
+    )
