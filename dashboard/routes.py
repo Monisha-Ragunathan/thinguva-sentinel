@@ -270,3 +270,9 @@ def run_red_team():
     from sentinel.red_team import RedTeamEngine
     engine = RedTeamEngine(policy_file="policies/sample.yaml")
     return engine.run_full_red_team()
+
+@router.post("/destination/analyze")
+def analyze_destination(payload: dict):
+    from sentinel.destination_intel import DestinationIntel
+    intel = DestinationIntel()
+    return intel.analyze(payload.get("action", ""))

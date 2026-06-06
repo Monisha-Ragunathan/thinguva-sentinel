@@ -285,7 +285,30 @@
     </table>
   </div>
 
-
+<!-- Destination Intelligence -->
+  <div class="section">
+    <h2>Destination Intelligence 🌐</h2>
+    <p style="color:#718096;font-size:13px;margin-bottom:16px">
+      Analyze where data is being sent — internal vs external, known vs suspicious.
+    </p>
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <input type="text" id="dest-input"
+        placeholder="e.g. send data to 192.168.1.1 or export to pastebin.com..."
+        style="flex:1;background:#0f1117;border:1px solid #2d3748;border-radius:8px;padding:10px 14px;color:#e2e8f0;font-size:13px;outline:none"/>
+      <button class="btn" onclick="analyzeDestination()">Analyze</button>
+    </div>
+    <div id="dest-result" style="display:none;background:#0f1117;border-radius:10px;padding:16px;border:1px solid #2d3748">
+      <div style="margin-bottom:8px">
+        <strong style="color:#a0aec0;font-size:12px">Highest Risk:</strong>
+        <span id="dest-risk" class="badge" style="margin-left:8px">-</span>
+      </div>
+      <div style="margin-bottom:8px;font-size:12px;color:#718096">
+        <strong style="color:#a0aec0">Summary:</strong>
+        <span id="dest-summary">-</span>
+      </div>
+      <div id="dest-destinations"></div>
+    </div>
+  </div>
 
   <!-- Red Team Mode -->
   <div class="section">
@@ -760,6 +783,40 @@ async function runRedTeam() {
 
   btn.textContent = '▶ Run Again';
   btn.disabled = false;
+}
+
+async function analyzeDestination() {
+  const input = document.getElementById('dest-input').value;
+  if (!input) return;
+
+  const res = await fetch('/api/destination/analyze', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({action: input})
+  });
+  const data = await res.json();
+
+  document.getElementById('dest-result').style.display = 'block';
+  const riskBadge = document.getElementById('dest-risk');
+  riskBadge.textContent = data.highest_risk;
+  riskBadge.className = 'badge ' + (
+    data.highest_risk === 'CRITICAL' ? 'BLOCKED' :
+    data.highest_risk === 'HIGH' ? 'LOOP_DETECTED' : 'ALLOWED'
+  );
+  document.getElementById('dest-summary').textContent = data.summary;
+
+  const destDiv = document.getElementById('dest-destinations');
+  if (data.destinations_found && data.destinations_found.length > 0) {
+    destDiv.innerHTML = data.destinations_found.map(d => `
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #2d3748;margin-top:8px">
+        <span class="badge ${d.risk==='CRITICAL'?'BLOCKED':d.risk==='HIGH'?'LOOP_DETECTED':'ALLOWED'}" style="font-size:10px">${d.type}</span>
+        <code style="font-size:12px;color:#e2e8f0">${d.destination}</code>
+        <span style="font-size:11px;color:#718096">— ${d.reason}</span>
+      </div>
+    `).join('');
+  } else {
+    destDiv.innerHTML = '';
+  }
 }
 
 </script>
