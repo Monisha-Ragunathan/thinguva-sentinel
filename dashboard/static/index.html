@@ -285,6 +285,33 @@
     </table>
   </div>
 
+
+
+  <!-- Red Team Mode -->
+  <div class="section">
+    <h2>Red Team Mode 🛡️</h2>
+    <p style="color:#718096;font-size:13px;margin-bottom:16px">
+      Automated attack scenario testing. Verify your governance system is battle-ready.
+    </p>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+      <button class="btn" onclick="runRedTeam()" id="redteam-btn">
+        ▶ Run Red Team Assessment
+      </button>
+      <div id="redteam-score" style="display:none">
+        <span style="font-size:28px;font-weight:700" id="score-value">-</span>
+        <span style="font-size:13px;color:#718096;margin-left:8px" id="score-grade">-</span>
+      </div>
+    </div>
+    <div id="redteam-results" style="display:none">
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Scenario</th><th>Category</th><th>Score</th><th>Status</th></tr>
+        </thead>
+        <tbody id="redteam-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- Behavior Profiling -->
   <div class="section">
     <h2>Behavior Profiles</h2>
@@ -694,6 +721,47 @@ async function loadBehaviorProfiles() {
 
 loadBehaviorProfiles();
 setInterval(loadBehaviorProfiles, 10000);
+
+async function runRedTeam() {
+  const btn = document.getElementById('redteam-btn');
+  btn.textContent = '⏳ Running...';
+  btn.disabled = true;
+
+  const res = await fetch('/api/redteam/run');
+  const data = await res.json();
+
+  // Show score
+  const scoreDiv = document.getElementById('redteam-score');
+  scoreDiv.style.display = 'flex';
+  scoreDiv.style.alignItems = 'center';
+  const scoreEl = document.getElementById('score-value');
+  scoreEl.textContent = data.overall_score + '%';
+  scoreEl.style.color = data.overall_score >= 85 ? '#48bb78' : data.overall_score >= 60 ? '#f6ad55' : '#fc8181';
+  document.getElementById('score-grade').textContent = data.grade;
+
+  // Show results
+  document.getElementById('redteam-results').style.display = 'block';
+  document.getElementById('redteam-tbody').innerHTML = data.scenarios.map(s => `
+    <tr>
+      <td><code style="background:#0f1117;padding:2px 6px;border-radius:4px;font-size:11px">${s.scenario_id}</code></td>
+      <td>${s.name}</td>
+      <td style="color:#718096">${s.category}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="background:#2d3748;border-radius:4px;height:6px;width:60px">
+            <div style="height:6px;border-radius:4px;width:${s.score}%;background:${s.score===100?'#48bb78':s.score>=70?'#f6ad55':'#fc8181'}"></div>
+          </div>
+          <span style="font-size:12px">${s.score}%</span>
+        </div>
+      </td>
+      <td><span class="badge ${s.score===100?'ALLOWED':s.score>=70?'LOOP_DETECTED':'BLOCKED'}">${s.score===100?'PASSED':s.score>=70?'PARTIAL':'FAILED'}</span></td>
+    </tr>
+  `).join('');
+
+  btn.textContent = '▶ Run Again';
+  btn.disabled = false;
+}
+
 </script>
 </body>
 </html>

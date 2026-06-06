@@ -265,3 +265,8 @@ def get_agent_history(agent_id: str):
     from sentinel.behavior_profiler import BehaviorProfiler
     profiler = BehaviorProfiler()
     return {"history": profiler.get_agent_history(agent_id)}
+@router.get("/redteam/run")
+def run_red_team():
+    from sentinel.red_team import RedTeamEngine
+    engine = RedTeamEngine(policy_file="policies/sample.yaml")
+    return engine.run_full_red_team()
