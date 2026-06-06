@@ -230,3 +230,38 @@ def get_regulations():
     from sentinel.compliance_mapper import ComplianceMapper
     mapper = ComplianceMapper()
     return {"regulations": list(mapper.regulations.keys())}
+
+@router.get("/behavior/profiles")
+def get_behavior_profiles():
+    from sentinel.behavior_profiler import BehaviorProfiler
+    profiler = BehaviorProfiler()
+    return {"profiles": profiler.get_all_profiles()}
+
+@router.post("/behavior/record")
+def record_behavior(payload: dict):
+    from sentinel.behavior_profiler import BehaviorProfiler
+    profiler = BehaviorProfiler()
+    profiler.record(
+        agent_id=payload.get("agent_id", "default"),
+        action=payload.get("action", ""),
+        tool=payload.get("tool", ""),
+        risk_score=payload.get("risk_score", 0),
+        session_id=payload.get("session_id", "")
+    )
+    return {"success": True}
+
+@router.post("/behavior/detect")
+def detect_deviation(payload: dict):
+    from sentinel.behavior_profiler import BehaviorProfiler
+    profiler = BehaviorProfiler()
+    return profiler.detect_deviation(
+        agent_id=payload.get("agent_id", "default"),
+        action=payload.get("action", ""),
+        risk_score=payload.get("risk_score", 0)
+    )
+
+@router.get("/behavior/history/{agent_id}")
+def get_agent_history(agent_id: str):
+    from sentinel.behavior_profiler import BehaviorProfiler
+    profiler = BehaviorProfiler()
+    return {"history": profiler.get_agent_history(agent_id)}

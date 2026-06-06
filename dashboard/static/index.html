@@ -285,6 +285,28 @@
     </table>
   </div>
 
+  <!-- Behavior Profiling -->
+  <div class="section">
+    <h2>Behavior Profiles</h2>
+    <p style="color:#718096;font-size:13px;margin-bottom:16px">
+      Agent behavior tracked over time. Deviations flagged automatically.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Agent ID</th>
+          <th>Dominant Behavior</th>
+          <th>Avg Risk</th>
+          <th>Total Actions</th>
+          <th>Last Seen</th>
+        </tr>
+      </thead>
+      <tbody id="behavior-tbody">
+        <tr><td colspan="5" class="empty">No agent profiles yet</td></tr>
+      </tbody>
+    </table>
+  </div>
+
   <!-- Compliance Report -->
   <div class="section">
     <h2>Compliance Report</h2>
@@ -643,6 +665,35 @@ loadPolicies();
 loadMode();
 
 setInterval(() => { loadStats(); loadLogs(); loadTimeline(); loadApprovals(); }, 5000);
+
+async function loadBehaviorProfiles() {
+  const res = await fetch('/api/behavior/profiles');
+  const data = await res.json();
+  const tbody = document.getElementById('behavior-tbody');
+  if (!data.profiles || data.profiles.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">No agent profiles yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.profiles.map(p => `
+    <tr>
+      <td><code style="background:#0f1117;padding:2px 6px;border-radius:4px;font-size:12px">${p.agent_id}</code></td>
+      <td><span class="badge ALLOWED">${p.dominant_category}</span></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="background:#2d3748;border-radius:4px;height:6px;width:60px">
+            <div style="height:6px;border-radius:4px;width:${p.avg_risk}%;background:${p.avg_risk>=80?'#fc8181':p.avg_risk>=40?'#f6ad55':'#48bb78'}"></div>
+          </div>
+          <span style="font-size:12px">${p.avg_risk}/100</span>
+        </div>
+      </td>
+      <td style="color:#718096">${p.total_actions}</td>
+      <td style="font-size:12px;color:#718096">${p.last_seen.replace('T',' ').split('.')[0]}</td>
+    </tr>
+  `).join('');
+}
+
+loadBehaviorProfiles();
+setInterval(loadBehaviorProfiles, 10000);
 </script>
 </body>
 </html>
