@@ -218,3 +218,15 @@ def get_timeline():
     from sentinel.risk_timeline import RiskTimeline
     timeline = RiskTimeline()
     return {"timeline": timeline.get_recent_timeline(limit=20)}
+
+@router.post("/compliance/check")
+def check_compliance(payload: dict):
+    from sentinel.compliance_mapper import ComplianceMapper
+    mapper = ComplianceMapper()
+    return mapper.map_action(payload.get("action", ""))
+
+@router.get("/compliance/regulations")
+def get_regulations():
+    from sentinel.compliance_mapper import ComplianceMapper
+    mapper = ComplianceMapper()
+    return {"regulations": list(mapper.regulations.keys())}

@@ -52,9 +52,6 @@
   .badge.BLOCKED { background: #3a1c1c; color: #fc8181; }
   .badge.LOOP_DETECTED { background: #3a2e1c; color: #f6ad55; }
   .badge.ANOMALY { background: #2d1f3a; color: #b794f4; }
-  .policy-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #3a1c1c; color: #fc8181; }
-  .chart-container { position: relative; }
-  .actions-bar { display: flex; gap: 10px; align-items: center; }
   .empty { color: #4a5568; text-align: center; padding: 30px; font-size: 14px; }
   .report-section { display: flex; align-items: center; justify-content: space-between; }
   .report-info { color: #718096; font-size: 13px; }
@@ -70,6 +67,7 @@
 </header>
 
 <div class="container">
+
   <!-- Stats -->
   <div class="stats">
     <div class="stat-card total">
@@ -141,8 +139,8 @@
     </div>
   </div>
 
-  <!-- Test -->
-<div class="section">
+  <!-- Test Agent Action -->
+  <div class="section">
     <h2>Test Agent Action</h2>
     <div class="test-bar">
       <input type="text" id="action-input" placeholder="Type an agent action e.g. archive all user records, summarize report..." />
@@ -177,6 +175,10 @@
       <div id="semantic-threats-row" style="font-size:12px;color:#f6ad55;display:none">
         <strong>⚠ Semantic Threats:</strong> <span id="semantic-threats">-</span>
       </div>
+      <div id="compliance-row" style="font-size:12px;color:#718096;margin-top:8px;display:none">
+        <strong style="color:#a0aec0">⚖ Compliance:</strong>
+        <span id="compliance-text">-</span>
+      </div>
     </div>
 
     <div style="margin-top:12px">
@@ -207,33 +209,20 @@
     </table>
   </div>
 
-
-<!-- Approval Queue -->
+  <!-- Approval Queue -->
   <div class="section">
     <h2>Approval Queue
       <span id="pending-count" style="background:#fc8181;color:#fff;font-size:11px;padding:2px 8px;border-radius:20px;margin-left:8px">0</span>
     </h2>
-    <p style="color:#718096;font-size:13px;margin-bottom:16px">
-      High risk agent actions waiting for human review.
-    </p>
-
-    <!-- Test submission -->
+    <p style="color:#718096;font-size:13px;margin-bottom:16px">High risk agent actions waiting for human review.</p>
     <div style="display:flex;gap:10px;margin-bottom:16px">
       <input type="text" id="approval-action" placeholder="Submit action for approval e.g. export user database..."
         style="flex:1;background:#0f1117;border:1px solid #2d3748;border-radius:8px;padding:10px 14px;color:#e2e8f0;font-size:13px;outline:none"/>
       <button class="btn" onclick="submitForApproval()">Submit for Approval</button>
     </div>
-
     <table>
       <thead>
-        <tr>
-          <th>ID</th>
-          <th>Time</th>
-          <th>Action</th>
-          <th>Risk</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
+        <tr><th>ID</th><th>Time</th><th>Action</th><th>Risk</th><th>Status</th><th>Actions</th></tr>
       </thead>
       <tbody id="approval-tbody">
         <tr><td colspan="6" class="empty">No pending approvals</td></tr>
@@ -245,7 +234,6 @@
   <div class="section">
     <h2>Policy Builder</h2>
     <p style="color:#718096;font-size:13px;margin-bottom:16px">Add custom governance rules — no code needed.</p>
-
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
       <div>
         <label style="font-size:12px;color:#718096;display:block;margin-bottom:4px">Rule Name</label>
@@ -277,29 +265,19 @@
         </select>
       </div>
     </div>
-
     <div style="margin-bottom:12px">
       <label style="font-size:12px;color:#718096;display:block;margin-bottom:4px">Reason</label>
       <input id="rule-reason" type="text" placeholder="e.g. Data exfiltration not permitted"
         style="width:100%;background:#0f1117;border:1px solid #2d3748;border-radius:8px;padding:8px 12px;color:#e2e8f0;font-size:13px;outline:none"/>
     </div>
-
     <div style="display:flex;gap:10px;margin-bottom:16px">
       <button class="btn" onclick="addRule()">Add Rule</button>
       <button class="btn-outline" onclick="loadPolicies()">↻ Refresh Rules</button>
     </div>
-
     <div id="policy-result" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px"></div>
-
     <table id="policy-table">
       <thead>
-        <tr>
-          <th>Pattern</th>
-          <th>Effect</th>
-          <th>Severity</th>
-          <th>Reason</th>
-          <th>Action</th>
-        </tr>
+        <tr><th>Pattern</th><th>Effect</th><th>Severity</th><th>Reason</th><th>Action</th></tr>
       </thead>
       <tbody id="policy-tbody">
         <tr><td colspan="5" class="empty">Loading rules...</td></tr>
@@ -317,6 +295,7 @@
       </a>
     </div>
   </div>
+
 </div>
 
 <script>
@@ -338,10 +317,7 @@ function initCharts() {
     options: {
       responsive: true,
       plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { color: '#718096', font: { size: 12 }, padding: 16 }
-        }
+        legend: { position: 'bottom', labels: { color: '#718096', font: { size: 12 }, padding: 16 } }
       },
       cutout: '65%'
     }
@@ -353,31 +329,13 @@ function initCharts() {
     data: {
       labels: [],
       datasets: [
-        {
-          label: 'Allowed',
-          data: [],
-          borderColor: '#48bb78',
-          backgroundColor: 'rgba(72,187,120,0.1)',
-          tension: 0.4,
-          fill: true
-        },
-        {
-          label: 'Blocked',
-          data: [],
-          borderColor: '#fc8181',
-          backgroundColor: 'rgba(252,129,129,0.1)',
-          tension: 0.4,
-          fill: true
-        }
+        { label: 'Allowed', data: [], borderColor: '#48bb78', backgroundColor: 'rgba(72,187,120,0.1)', tension: 0.4, fill: true },
+        { label: 'Blocked', data: [], borderColor: '#fc8181', backgroundColor: 'rgba(252,129,129,0.1)', tension: 0.4, fill: true }
       ]
     },
     options: {
       responsive: true,
-      plugins: {
-        legend: {
-          labels: { color: '#718096', font: { size: 12 } }
-        }
-      },
+      plugins: { legend: { labels: { color: '#718096', font: { size: 12 } } } },
       scales: {
         x: { ticks: { color: '#4a5568', font: { size: 11 } }, grid: { color: '#1e2535' } },
         y: { ticks: { color: '#4a5568', font: { size: 11 } }, grid: { color: '#1e2535' }, beginAtZero: true }
@@ -393,7 +351,6 @@ async function loadStats() {
   document.getElementById('allowed').textContent = data.allowed;
   document.getElementById('blocked').textContent = data.blocked;
   document.getElementById('loops').textContent = data.loops_detected;
-
   pieChart.data.datasets[0].data = [data.allowed, data.blocked, data.loops_detected];
   pieChart.update();
 }
@@ -402,19 +359,16 @@ async function loadLogs() {
   const res = await fetch('/api/logs');
   const data = await res.json();
   const tbody = document.getElementById('log-table');
-
   if (data.logs.length === 0) {
     tbody.innerHTML = '<tr><td colspan="4" class="empty">No actions yet — run a test above</td></tr>';
     return;
   }
-
   tbody.innerHTML = data.logs.map(log => {
     let action = '';
     try {
       const parsed = JSON.parse(log.action);
       action = parsed.tool || parsed.args || '';
     } catch { action = log.action; }
-
     return `<tr>
       <td>${log.timestamp.replace('T',' ').split('.')[0]}</td>
       <td>${String(action).substring(0, 40)}</td>
@@ -422,8 +376,6 @@ async function loadLogs() {
       <td>${log.reason || '—'}</td>
     </tr>`;
   }).join('');
-
-  // Update timeline
   const last10 = data.logs.slice(0, 10).reverse();
   timelineChart.data.labels = last10.map(l => l.timestamp.split('T')[1].split('.')[0]);
   timelineChart.data.datasets[0].data = last10.map(l => l.status === 'ALLOWED' ? 1 : 0);
@@ -435,7 +387,7 @@ async function testAction() {
   const input = document.getElementById('action-input').value;
   if (!input) return;
 
-  // Get risk assessment
+  // Risk assessment
   const riskRes = await fetch('/api/assess', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -444,23 +396,16 @@ async function testAction() {
   const risk = await riskRes.json();
 
   // Show risk card
-  const card = document.getElementById('risk-card');
-  card.style.display = 'block';
-
-  // Risk score bar
+  document.getElementById('risk-card').style.display = 'block';
   const score = risk.risk_score;
   const bar = document.getElementById('risk-bar');
-  const barColor = score >= 85 ? '#fc8181' : score >= 70 ? '#f6ad55' : score >= 40 ? '#f6ad55' : '#48bb78';
+  const barColor = score >= 80 ? '#fc8181' : score >= 60 ? '#f6ad55' : '#48bb78';
   bar.style.width = score + '%';
   bar.style.background = barColor;
   document.getElementById('risk-score-text').textContent = score + '/100';
-
-  // Risk badge
   const badge = document.getElementById('risk-badge');
   badge.textContent = risk.risk_level;
-  badge.className = 'badge ' + (score >= 85 ? 'BLOCKED' : score >= 40 ? 'LOOP_DETECTED' : 'ALLOWED');
-
-  // Details
+  badge.className = 'badge ' + (score >= 80 ? 'BLOCKED' : score >= 40 ? 'LOOP_DETECTED' : 'ALLOWED');
   document.getElementById('risk-decision').textContent = risk.decision;
   document.getElementById('risk-rules').textContent = risk.matched_rules.join(', ') || 'None';
   document.getElementById('risk-explanation').textContent = risk.explanation;
@@ -474,6 +419,23 @@ async function testAction() {
     threatRow.style.display = 'none';
   }
 
+  // Compliance check
+  const compRes = await fetch('/api/compliance/check', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({action: input})
+  });
+  const comp = await compRes.json();
+  const compRow = document.getElementById('compliance-row');
+  compRow.style.display = 'block';
+  if (comp.violations_found > 0) {
+    document.getElementById('compliance-text').innerHTML =
+      `<span style="color:#fc8181">${comp.summary}</span>`;
+  } else {
+    document.getElementById('compliance-text').innerHTML =
+      `<span style="color:#48bb78">No violations detected</span>`;
+  }
+
   // Run action
   const res = await fetch('/api/test/action', {
     method: 'POST',
@@ -483,14 +445,14 @@ async function testAction() {
   const data = await res.json();
   const result = document.getElementById('result');
   result.style.display = 'block';
-  const cls = data.status.toLowerCase();
-  result.className = `result ${cls}`;
+  result.className = `result ${data.status.toLowerCase()}`;
   result.textContent = data.status === 'ALLOWED'
     ? `✓ Allowed — ${data.result}`
     : `✗ ${data.status} — ${data.reason}`;
 
   loadStats();
   loadLogs();
+  loadTimeline();
   document.getElementById('action-input').value = '';
 }
 
@@ -502,11 +464,90 @@ document.getElementById('action-input').addEventListener('keypress', e => {
   if (e.key === 'Enter') testAction();
 });
 
-initCharts();
-loadStats();
-loadLogs();
-setInterval(() => { loadStats(); loadLogs(); }, 5000);
+// Timeline
+async function loadTimeline() {
+  const res = await fetch('/api/timeline');
+  const data = await res.json();
+  const container = document.getElementById('timeline-container');
+  if (!data.timeline || data.timeline.length === 0) {
+    container.innerHTML = '<p class="empty">No timeline data yet</p>';
+    return;
+  }
+  container.innerHTML = data.timeline.map((step, i) => `
+    <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #1e2535">
+      <div style="width:28px;height:28px;border-radius:50%;background:${step.risk_level==='CRITICAL'?'#3a1c1c':step.risk_level==='HIGH'?'#3a2e1c':'#1c2a1c'};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:${step.risk_level==='CRITICAL'?'#fc8181':step.risk_level==='HIGH'?'#f6ad55':'#48bb78'};flex-shrink:0">${i+1}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${step.action}</div>
+        <div style="font-size:11px;color:#4a5568">${step.timestamp.replace('T',' ').split('.')[0]}</div>
+      </div>
+      <span class="badge ${step.status==='ALLOWED'?'ALLOWED':step.status==='BLOCKED'?'BLOCKED':'LOOP_DETECTED'}" style="font-size:10px;flex-shrink:0">${step.risk_score}/100</span>
+    </div>
+  `).join('');
+}
 
+// Approvals
+async function loadApprovals() {
+  const res = await fetch('/api/approvals/all');
+  const data = await res.json();
+  const tbody = document.getElementById('approval-tbody');
+  const pending = data.approvals.filter(a => a.status === 'PENDING');
+  document.getElementById('pending-count').textContent = pending.length;
+  document.getElementById('pending-count').style.background = pending.length > 0 ? '#fc8181' : '#48bb78';
+  if (!data.approvals || data.approvals.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">No approvals yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.approvals.map(a => `
+    <tr>
+      <td><code style="background:#0f1117;padding:2px 6px;border-radius:4px;font-size:11px">${a.request_id}</code></td>
+      <td style="font-size:12px;color:#718096">${a.timestamp.replace('T',' ').split('.')[0]}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">${a.action}</td>
+      <td><span class="badge ${a.risk_level==='CRITICAL'?'BLOCKED':'LOOP_DETECTED'}">${a.risk_level}</span></td>
+      <td><span class="badge ${a.status==='APPROVED'?'ALLOWED':a.status==='REJECTED'?'BLOCKED':'LOOP_DETECTED'}">${a.status}</span></td>
+      <td>${a.status==='PENDING'?`
+        <button onclick="approveAction('${a.request_id}')" style="background:#1c3a2a;color:#48bb78;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;margin-right:4px">✓ Approve</button>
+        <button onclick="rejectAction('${a.request_id}')" style="background:#3a1c1c;color:#fc8181;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px">✗ Reject</button>
+      `:`<span style="color:#4a5568;font-size:12px">Reviewed by ${a.reviewed_by||'admin'}</span>`}</td>
+    </tr>
+  `).join('');
+}
+
+async function submitForApproval() {
+  const action = document.getElementById('approval-action').value;
+  if (!action) return;
+  const assessment = await fetch('/api/assess', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({action})
+  }).then(r => r.json());
+  await fetch('/api/approvals/submit', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({action, risk_score: assessment.risk_score, risk_level: assessment.risk_level, explanation: assessment.explanation})
+  });
+  document.getElementById('approval-action').value = '';
+  loadApprovals();
+}
+
+async function approveAction(requestId) {
+  await fetch('/api/approvals/approve', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({request_id: requestId, reviewed_by: 'admin'})
+  });
+  loadApprovals();
+}
+
+async function rejectAction(requestId) {
+  await fetch('/api/approvals/reject', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({request_id: requestId, reviewed_by: 'admin'})
+  });
+  loadApprovals();
+}
+
+// Policies
 async function loadPolicies() {
   const res = await fetch('/api/policies/all');
   const data = await res.json();
@@ -518,13 +559,10 @@ async function loadPolicies() {
   tbody.innerHTML = data.rules.map(rule => `
     <tr>
       <td><code style="background:#0f1117;padding:2px 6px;border-radius:4px;font-size:12px">${rule.pattern}</code></td>
-      <td><span class="badge ${rule.effect === 'block' ? 'BLOCKED' : 'ALLOWED'}">${rule.effect.toUpperCase()}</span></td>
-      <td><span class="badge ${rule.severity === 'CRITICAL' ? 'BLOCKED' : rule.severity === 'HIGH' ? 'LOOP_DETECTED' : 'ALLOWED'}">${rule.severity || 'HIGH'}</span></td>
-      <td style="color:#718096">${rule.reason || '—'}</td>
-      <td><button onclick="deleteRule('${rule.pattern}')"
-        style="background:#3a1c1c;color:#fc8181;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px">
-        Delete
-      </button></td>
+      <td><span class="badge ${rule.effect==='block'?'BLOCKED':'ALLOWED'}">${rule.effect.toUpperCase()}</span></td>
+      <td><span class="badge ${rule.severity==='CRITICAL'?'BLOCKED':rule.severity==='HIGH'?'LOOP_DETECTED':'ALLOWED'}">${rule.severity||'HIGH'}</span></td>
+      <td style="color:#718096">${rule.reason||'—'}</td>
+      <td><button onclick="deleteRule('${rule.pattern}')" style="background:#3a1c1c;color:#fc8181;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px">Delete</button></td>
     </tr>
   `).join('');
 }
@@ -535,12 +573,7 @@ async function addRule() {
   const effect = document.getElementById('rule-effect').value;
   const severity = document.getElementById('rule-severity').value;
   const reason = document.getElementById('rule-reason').value;
-
-  if (!name || !pattern) {
-    showPolicyResult('Please fill in name and pattern', false);
-    return;
-  }
-
+  if (!name || !pattern) { showPolicyResult('Please fill in name and pattern', false); return; }
   const res = await fetch('/api/policies/add', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -548,7 +581,6 @@ async function addRule() {
   });
   const data = await res.json();
   showPolicyResult(data.message, data.success);
-
   if (data.success) {
     document.getElementById('rule-name').value = '';
     document.getElementById('rule-pattern').value = '';
@@ -578,98 +610,11 @@ function showPolicyResult(message, success) {
   setTimeout(() => el.style.display = 'none', 3000);
 }
 
-loadPolicies();
-
-async function loadApprovals() {
-  const res = await fetch('/api/approvals/all');
-  const data = await res.json();
-  const tbody = document.getElementById('approval-tbody');
-  const pending = data.approvals.filter(a => a.status === 'PENDING');
-
-  // Update badge
-  document.getElementById('pending-count').textContent = pending.length;
-  document.getElementById('pending-count').style.background =
-    pending.length > 0 ? '#fc8181' : '#48bb78';
-
-  if (!data.approvals || data.approvals.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty">No approvals yet</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = data.approvals.map(a => `
-    <tr>
-      <td><code style="background:#0f1117;padding:2px 6px;border-radius:4px;font-size:11px">${a.request_id}</code></td>
-      <td style="font-size:12px;color:#718096">${a.timestamp.replace('T',' ').split('.')[0]}</td>
-      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">${a.action}</td>
-      <td><span class="badge ${a.risk_level === 'CRITICAL' ? 'BLOCKED' : 'LOOP_DETECTED'}">${a.risk_level}</span></td>
-      <td><span class="badge ${a.status === 'APPROVED' ? 'ALLOWED' : a.status === 'REJECTED' ? 'BLOCKED' : 'LOOP_DETECTED'}">${a.status}</span></td>
-      <td>
-        ${a.status === 'PENDING' ? `
-          <button onclick="approveAction('${a.request_id}')"
-            style="background:#1c3a2a;color:#48bb78;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;margin-right:4px">
-            ✓ Approve
-          </button>
-          <button onclick="rejectAction('${a.request_id}')"
-            style="background:#3a1c1c;color:#fc8181;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px">
-            ✗ Reject
-          </button>
-        ` : `<span style="color:#4a5568;font-size:12px">Reviewed by ${a.reviewed_by || 'admin'}</span>`}
-      </td>
-    </tr>
-  `).join('');
-}
-
-async function submitForApproval() {
-  const action = document.getElementById('approval-action').value;
-  if (!action) return;
-
-  const assessment = await fetch('/api/assess', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({action})
-  }).then(r => r.json());
-
-  await fetch('/api/approvals/submit', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      action,
-      risk_score: assessment.risk_score,
-      risk_level: assessment.risk_level,
-      explanation: assessment.explanation
-    })
-  });
-
-  document.getElementById('approval-action').value = '';
-  loadApprovals();
-}
-
-async function approveAction(requestId) {
-  await fetch('/api/approvals/approve', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({request_id: requestId, reviewed_by: 'admin'})
-  });
-  loadApprovals();
-}
-
-async function rejectAction(requestId) {
-  await fetch('/api/approvals/reject', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({request_id: requestId, reviewed_by: 'admin'})
-  });
-  loadApprovals();
-}
-
-loadApprovals();
-setInterval(loadApprovals, 5000);
-
+// Mode
 async function loadMode() {
   const res = await fetch('/api/mode');
   const data = await res.json();
   const current = data.current_mode;
-
   ['strict', 'balanced', 'learning'].forEach(mode => {
     const el = document.getElementById(`mode-${mode}`);
     if (el) {
@@ -688,35 +633,16 @@ async function setMode(mode) {
   loadMode();
 }
 
+// Init
+initCharts();
+loadStats();
+loadLogs();
+loadTimeline();
+loadApprovals();
+loadPolicies();
 loadMode();
 
-async function loadTimeline() {
-  const res = await fetch('/api/timeline');
-  const data = await res.json();
-  const container = document.getElementById('timeline-container');
-
-  if (!data.timeline || data.timeline.length === 0) {
-    container.innerHTML = '<p class="empty">No timeline data yet</p>';
-    return;
-  }
-
-  container.innerHTML = data.timeline.map((step, i) => `
-    <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #1e2535">
-      <div style="width:28px;height:28px;border-radius:50%;background:${step.risk_level === 'CRITICAL' ? '#3a1c1c' : step.risk_level === 'HIGH' ? '#3a2e1c' : '#1c2a1c'};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:${step.risk_level === 'CRITICAL' ? '#fc8181' : step.risk_level === 'HIGH' ? '#f6ad55' : '#48bb78'};flex-shrink:0">${i+1}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${step.action}</div>
-        <div style="font-size:11px;color:#4a5568">${step.timestamp.replace('T',' ').split('.')[0]}</div>
-      </div>
-      <div style="flex-shrink:0">
-        <span class="badge ${step.status === 'ALLOWED' ? 'ALLOWED' : step.status === 'BLOCKED' ? 'BLOCKED' : 'LOOP_DETECTED'}" style="font-size:10px">${step.risk_score}/100</span>
-      </div>
-    </div>
-  `).join('');
-}
-
-loadTimeline();
-setInterval(loadTimeline, 5000);
-
+setInterval(() => { loadStats(); loadLogs(); loadTimeline(); loadApprovals(); }, 5000);
 </script>
 </body>
 </html>
